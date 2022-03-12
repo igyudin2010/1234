@@ -1,39 +1,37 @@
-from parse import parse, Result, Match
-from typing import Callable, Optional, Any, Union, Tuple
+import inspect
 
+from parse import parse
 from webob import Request, Response
 
-from exceptions.routes import DuplicateRouteFound
+from exceptions.routing import DuplicateRouteFound, MethodIsNotAllowed
 
 
 class API:
     def __init__(self) -> None:
-
-    @ @-32
-
-    , 6 + 34, 8 @ @
-
-    def _handle_request(self, request: Request) -> Response:
-
-        self.routes: dict[str, Callable[[Request, Response, ...], None]] = {}
+        self.routes = {}
 
     def __call__(self, environ, start_response):
         request = Request(environ)
         return self._handle_request(request)(environ, start_response)
 
-    def _find_handler(self, request_path) \
-            -> Union[tuple[Callable[[Request, Response, ...], None], dict[str, Any]], tuple[None, None]]:
+    def _find_handler(self, request_path):
         for path, handler in self.routes.items():
             parse_result = parse(path, request_path)
             if parse_result:
                 return handler, parse_result.named
         return None, None
 
-    def _handle_request(self, request: Request) -> Response:
+    def _handle_request(self, request):
         response = Response()
         handler, kwargs = self._find_handler(request.path)
         if handler:
             handler(request, response, **kwargs)
+            if inspect.isclass(handler):
+                handler = getattr(handler(), request.method.lower())
+                if not handler:
+                    raise MethodIsNotAllowed(f"{request.method} is not allowed for this route")
+
+            handler(request, response)
         else:
             response.status_code = 404
             response.text = "Not found"
@@ -45,5 +43,4 @@ class API:
                 raise DuplicateRouteFound(f"Route {path} is already handled by {_handler.__name__}")
             self.routes[path] = handler
             return handler
-
         return wrapper
