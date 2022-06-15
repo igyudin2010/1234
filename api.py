@@ -115,4 +115,3 @@ class API:
 
     def add_middleware(self, middleware_cls):
         self.middleware.add(middleware_cls)
-

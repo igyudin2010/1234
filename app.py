@@ -69,4 +69,3 @@ class SimpleCustomMiddleware(Middleware):
 
 app.add_middleware(SimpleCustomMiddleware)
 
-
